@@ -1,2 +1,2 @@
 # PhDProject
-Ph.D. Project - Scripts
+Alessia Brucato - Ph.D. Project
