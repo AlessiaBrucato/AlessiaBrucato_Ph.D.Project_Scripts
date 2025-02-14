@@ -104,3 +104,11 @@ images_destination = os.path.join('..', '3.1_AUGMENTATION-SPLITTING', 'images')
 input_folder = os.path.join('..', 'INPUT')
 output_shapefile = #r'...PATH TO OUTPUT FOLDER...\...OUTPUT LCP NAME.shp'
 calculate_lcp(input_folder, output_shapefile)
+
+
+
+
+
+
+
+#AlessiaBrucato_Ph.D.Project_Scripts
