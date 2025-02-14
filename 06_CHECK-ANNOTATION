@@ -44,3 +44,10 @@ if __name__ == "__main__":
     patch_dir = os.path.join(base_dir, "2.1_LABELLING")  
     output_dir = os.path.join(base_dir, "2.2_LABELLING-check")
     visualize_bounding_boxes(patch_dir, output_dir)
+
+
+
+
+
+
+#AlessiaBrucato_Ph.D.Project_Scripts
