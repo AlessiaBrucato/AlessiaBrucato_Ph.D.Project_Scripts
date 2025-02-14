@@ -1,0 +1,14 @@
+# Path to training dataset
+train: #...\PATH TO\...\training_dataset
+
+# Path to validation dataset
+val: #...\PATH TO\...\validation_dataset
+
+# Path to test dataset (optional; include if testing separately)
+test: #...\PATH TO\...\test_dataset
+
+# Number of classes
+nc: #This is the quantity of classes, not the class ID in labels (for YOLO the first class ID should be "0")
+
+# Class names
+names: ['...'] #Real name of the classes: Feature, Target, etc.
