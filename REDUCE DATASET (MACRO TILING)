@@ -5,7 +5,6 @@ import math
 def split_geotiff(input_tif, output_dir, tile_width, tile_height):
     """
     Splits a GeoTIFF file into tiles of specified width and height, maintaining georeferencing.
-
     Args:
         input_tif (str): Path to the input GeoTIFF file.
         output_dir (str): Directory to save the tiles.
