@@ -18,7 +18,6 @@ start_time = time.time()
 try:
     if not os.path.exists(main_dir):
         raise FileNotFoundError(f"Main directory does not exist: {main_dir}")
-    
     print(f"Using existing main directory: {main_dir}")
     for folder in folders:
         folder_start = time.time()
