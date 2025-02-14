@@ -6,7 +6,7 @@ Instructions:
 
 0 - Install Anaconda and NVIDIA CUDA Toolkit.
 
-1 - Create Anaconda environments as explained in file 01. [Prompt - Python 3.9.21]
+1 - Create Anaconda environments as explained in file 01. [Anaconda Prompt - Python 3.9.21]
 
 2 - Follow the instructions and execute files 02-06 in Env.1. [JupyterLab - Python 3.9.21]
 
