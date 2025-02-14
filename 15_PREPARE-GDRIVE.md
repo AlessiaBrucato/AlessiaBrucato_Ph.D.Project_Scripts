@@ -3,3 +3,11 @@ IN THE GDRIVE LINKED TO GOOGLE EARTH ENGINE, CREATE 2 DIRECTORIES NAMED:
 - RASTER
 
 - SHP
+
+
+
+
+
+
+
+#AlessiaBrucato_Ph.D.Project_Scripts
