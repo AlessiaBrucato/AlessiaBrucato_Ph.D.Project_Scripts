@@ -1,0 +1,57 @@
+import os
+import shutil
+import random
+def split_dataset_with_labels(source_folder, label_folder, output_folder, train_percent=0.5, test_percent=0.25, val_percent=0.25):
+    if not abs(train_percent + test_percent + val_percent - 1.0) < 1e-6:
+        raise ValueError("The sum of train_percent, test_percent, and val_percent must be 1.0")
+    train_folder = os.path.join(output_folder, "training_dataset")
+    test_folder = os.path.join(output_folder, "test_dataset")
+    val_folder = os.path.join(output_folder, "validation_dataset")
+    for folder in [train_folder, test_folder, val_folder]:
+        os.makedirs(folder, exist_ok=True)
+    image_files = [f for f in os.listdir(source_folder) if os.path.isfile(os.path.join(source_folder, f))]
+    label_files = [f for f in os.listdir(label_folder) if os.path.isfile(os.path.join(label_folder, f))]
+    pairs = [
+        (os.path.join(source_folder, img), os.path.join(label_folder, base_name + ".txt"))
+        for img in image_files
+        if (base_name := os.path.splitext(img)[0]) + ".txt" in label_files
+    ]
+    if not pairs:
+        print("No valid image-label pairs found. Check your source and label folders.")
+        return
+    print("Total pairs:", len(pairs))
+    print("Total files:", len(pairs) * 2, "\n")
+    random.shuffle(pairs)
+    total_files = len(pairs)
+    train_count = int(total_files * train_percent)
+    test_count = int(total_files * test_percent)
+    val_count = total_files - train_count - test_count
+    train_pairs = pairs[:train_count]
+    test_pairs = pairs[train_count:train_count + test_count]
+    val_pairs = pairs[train_count + test_count:]
+    print("Train pairs:", len(train_pairs))
+    print("Train total files:", len(train_pairs) * 2, "\n")
+    print("Test pairs:", len(test_pairs))
+    print("Test total files:", len(test_pairs) * 2, "\n")
+    print("Validation pairs:", len(val_pairs))
+    print("Validation total files:", len(val_pairs) * 2, "\n")
+    def copy_pairs(pairs, destination, folder_name):
+        count = 0
+        for img, lbl in pairs:
+            print(f"Copying: {img}, {lbl} to {destination}")
+            shutil.copy(img, os.path.join(destination, os.path.basename(img)))
+            shutil.copy(lbl, os.path.join(destination, os.path.basename(lbl)))
+            count += 1
+        print(f"Total files copied to {folder_name}: {count * 2}")
+    copy_pairs(train_pairs, train_folder, "training_dataset")
+    copy_pairs(test_pairs, test_folder, "test_dataset")
+    copy_pairs(val_pairs, val_folder, "validation_dataset")
+if __name__ == "__main__":
+    script_dir = os.path.dirname(os.getcwd())
+    source_folder = os.path.join(script_dir, "3.1_AUGMENTATION-SPLITTING", "FINAL_patches")
+    label_folder = os.path.join(script_dir, "3.1_AUGMENTATION-SPLITTING", "FINAL_labels")
+    output_folder = os.path.join(script_dir, "4.1_TRAINING")
+    train_percent = 0.8
+    val_percent = 0.1
+    test_percent = 0.1
+    split_dataset_with_labels(source_folder, label_folder, output_folder, train_percent, test_percent, val_percent)
