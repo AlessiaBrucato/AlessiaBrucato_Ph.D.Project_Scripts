@@ -46,3 +46,10 @@ for file_name in os.listdir(input_folder):
         print(f"Processing GeoTIFF file: {input_tif_path}")
         file_output_dir = os.path.join(output_tiles_dir, os.path.splitext(file_name)[0])
         split_geotiff(input_tif_path, file_output_dir, tile_width_px, tile_height_px)
+
+
+
+
+
+
+#AlessiaBrucato_Ph.D.Project_Scripts
