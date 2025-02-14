@@ -1,0 +1,30 @@
+import os
+import shutil
+base_dir = os.path.abspath(os.path.join(os.getcwd(), ".."))
+augmentation_splitting_dir = os.path.join(base_dir, "3.1_AUGMENTATION-SPLITTING")
+images_dir = os.path.join(augmentation_splitting_dir, "images")
+labels_dir = os.path.join(augmentation_splitting_dir, "labels")
+augmented_images_dir = os.path.join(augmentation_splitting_dir, "augmented_images")
+augmented_labels_dir = os.path.join(augmentation_splitting_dir, "augmented_labels")
+final_patches_dir = os.path.join(augmentation_splitting_dir, "FINAL_patches")
+final_labels_dir = os.path.join(augmentation_splitting_dir, "FINAL_labels")
+os.makedirs(final_patches_dir, exist_ok=True)
+os.makedirs(final_labels_dir, exist_ok=True)
+print(f"Paths verified:\n- Base Directory: {base_dir}\n- Augmentation Splitting Directory: {augmentation_splitting_dir}")
+def copy_files(src_dir, dest_dir, extension):
+    if os.path.exists(src_dir):
+        print(f"Processing directory: {src_dir}")
+        for file_name in os.listdir(src_dir):
+            print(f"Found file: {file_name}")
+            if file_name.endswith(extension):
+                src_file = os.path.join(src_dir, file_name)
+                dest_file = os.path.join(dest_dir, file_name)
+                shutil.copy(src_file, dest_file)
+                print(f"Copied {src_file} to {dest_file}")
+    else:
+        print(f"Source directory {src_dir} does not exist.")
+copy_files(images_dir, final_patches_dir, extension=".jpg") 
+copy_files(augmented_images_dir, final_patches_dir, extension=".jpg")
+copy_files(labels_dir, final_labels_dir, extension=".txt")
+copy_files(augmented_labels_dir, final_labels_dir, extension=".txt")
+print("Files have been successfully copied to FINAL_patches and FINAL_labels folders.")
