@@ -74,16 +74,14 @@ conda list
 --------------------------------------------------
 ENV-4: PLOT STATISTICS
 --------------------------------------------------
-section in progress...
 
-
-
-
+conda install -c conda-forge numpy pandas scipy scikit-learn matplotlib geopandas rasterio fiona pyproj jupyter
 
 --------------------------------------------------
 ENV-5: LCP
 --------------------------------------------------
-section in progress...
+
+conda install -c conda-forge numpy pandas scipy scikit-learn geopandas rasterio fiona pyproj matplotlib-base jupyterlab
 
 
 
