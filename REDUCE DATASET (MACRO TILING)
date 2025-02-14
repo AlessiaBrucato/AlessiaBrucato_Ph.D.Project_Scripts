@@ -1,0 +1,49 @@
+import os
+import rasterio
+from rasterio.windows import Window
+import math
+def split_geotiff(input_tif, output_dir, tile_width, tile_height):
+    """
+    Splits a GeoTIFF file into tiles of specified width and height, maintaining georeferencing.
+
+    Args:
+        input_tif (str): Path to the input GeoTIFF file.
+        output_dir (str): Directory to save the tiles.
+        tile_width (int): Width of each tile in pixels.
+        tile_height (int): Height of each tile in pixels.
+    """
+    os.makedirs(output_dir, exist_ok=True)
+    with rasterio.open(input_tif) as src:
+        meta = src.meta.copy()
+        src_width, src_height = src.width, src.height
+        n_cols = math.ceil(src_width / tile_width)
+        n_rows = math.ceil(src_height / tile_height)
+        for row in range(n_rows):
+            for col in range(n_cols):
+                x_offset = col * tile_width
+                y_offset = row * tile_height
+                win_width = min(tile_width, src_width - x_offset)
+                win_height = min(tile_height, src_height - y_offset)
+                window = Window(x_offset, y_offset, win_width, win_height)
+                transform = src.window_transform(window)
+                meta.update({
+                    "width": win_width,
+                    "height": win_height,
+                    "transform": transform
+                })
+                output_filename = os.path.join(
+                    output_dir, f"{os.path.splitext(os.path.basename(input_tif))[0]}_tile_{row}_{col}.tif"
+                )
+                with rasterio.open(output_filename, "w", **meta) as dest:
+                    dest.write(src.read(window=window))
+                print(f"Saved tile: {output_filename}")
+input_folder = os.path.join("..", "1.0_PREPARE-DATASET-PREDICT")
+output_tiles_dir = os.path.join("..", "1.0_PREPARE-DATASET-PREDICT", "SPLIT")
+tile_width_px = 50000  
+tile_height_px = 50000  
+for file_name in os.listdir(input_folder):
+    if file_name.lower().endswith(".tif"):
+        input_tif_path = os.path.join(input_folder, file_name)
+        print(f"Processing GeoTIFF file: {input_tif_path}")
+        file_output_dir = os.path.join(output_tiles_dir, os.path.splitext(file_name)[0])
+        split_geotiff(input_tif_path, file_output_dir, tile_width_px, tile_height_px)
