@@ -28,3 +28,11 @@ copy_files(augmented_images_dir, final_patches_dir, extension=".jpg")
 copy_files(labels_dir, final_labels_dir, extension=".txt")
 copy_files(augmented_labels_dir, final_labels_dir, extension=".txt")
 print("Files have been successfully copied to FINAL_patches and FINAL_labels folders.")
+
+
+
+
+
+
+
+#AlessiaBrucato_Ph.D.Project_Scripts
