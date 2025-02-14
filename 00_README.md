@@ -2,7 +2,9 @@
 
 Alessia Brucato - Ph.D. Project - Scripts
 
+------------------------------------------------------------
 Instructions:
+------------------------------------------------------------
 
 1 - Create anaconda environments as explained in file 01.
 
