@@ -1,0 +1,95 @@
+import rasterio
+from rasterio.windows import Window
+import geopandas as gpd
+from shapely.geometry import box
+import os
+from PIL import Image
+import numpy as np
+import random
+def find_files_by_extension(folder, extension):
+    """
+    Find all files in the folder (or its subfolders) with the given extension.
+    """
+    file_paths = []
+    for root, _, files in os.walk(folder):
+        for file in files:
+            if file.lower().endswith(extension.lower()):
+                file_paths.append(os.path.join(root, file))
+    return file_paths
+def generate_yolo_dataset(geotiff_path, shapefile_path, patch_size, bbox_size_meters, output_dir):
+    with rasterio.open(geotiff_path) as src:
+        affine = src.transform
+        crs = src.crs
+        shapefile = gpd.read_file(shapefile_path).to_crs(crs)
+        image_bounds = box(*src.bounds)
+        shapefile = shapefile[shapefile.intersects(image_bounds)]
+        if shapefile.empty:
+            print(f"Warning: No features within the image bounds for {geotiff_path}")
+            return
+        geotiff_output_dir = os.path.join(output_dir, os.path.splitext(os.path.basename(geotiff_path))[0])
+        if not os.path.exists(geotiff_output_dir):
+            os.makedirs(geotiff_output_dir)
+        margin_x = int(src.width * 0.05)
+        margin_y = int(src.height * 0.05)
+        patches_with_features = []
+        patches_without_features = []
+        for row_off in range(margin_y, src.height - margin_y, patch_size):
+            for col_off in range(margin_x, src.width - margin_x, patch_size):
+                if col_off + patch_size > src.width or row_off + patch_size > src.height:
+                    continue
+                window = Window(col_off, row_off, patch_size, patch_size)
+                patch_bounds = src.window_bounds(window)
+                points_in_patch = shapefile[shapefile.intersects(box(*patch_bounds))]
+                if points_in_patch.empty:
+                    patches_without_features.append((row_off, col_off, patch_bounds))
+                else:
+                    patches_with_features.append((row_off, col_off, patch_bounds))
+        if len(patches_without_features) > 2 * len(patches_with_features):
+            patches_without_features = random.sample(patches_without_features, 2 * len(patches_with_features))
+        all_patches = patches_with_features + patches_without_features
+        for idx, (row_off, col_off, patch_bounds) in enumerate(all_patches):
+            window = Window(col_off, row_off, patch_size, patch_size)
+            patch = src.read(window=window)
+            if patch.dtype != np.uint8:
+                patch = (255 * (patch - patch.min()) / (patch.max() - patch.min())).astype(np.uint8)
+            if src.count == 1:
+                patch = np.stack([patch] * 3, axis=-1)
+            elif src.count == 3:
+                patch = np.moveaxis(patch, 0, -1)
+            patch_idx = f"{row_off}_{col_off}"
+            patch_path = os.path.join(geotiff_output_dir, f"patch_{patch_idx}.jpg")
+            Image.fromarray(patch).save(patch_path, "JPEG")
+            label_path = os.path.join(geotiff_output_dir, f"patch_{patch_idx}.txt")
+            with open(label_path, 'w') as label_file:
+                points_in_patch = shapefile[shapefile.intersects(box(*patch_bounds))]
+                if not points_in_patch.empty:
+                    center_latitude = (src.bounds[1] + src.bounds[3]) / 2
+                    meters_per_degree = 111320 * np.cos(np.radians(center_latitude))
+                    patch_width_meters = patch_size * affine[0] * meters_per_degree
+                    patch_height_meters = patch_size * abs(affine[4]) * meters_per_degree
+                    print(f"Patch dimensions (meters): width = {patch_width_meters}, height = {patch_height_meters}")
+                    for feature in points_in_patch.geometry:
+                        x_center = (feature.x - patch_bounds[0]) / (patch_bounds[2] - patch_bounds[0])
+                        y_center = (patch_bounds[3] - feature.y) / (patch_bounds[3] - patch_bounds[1])
+                        box_width = bbox_size_meters / patch_width_meters
+                        box_height = bbox_size_meters / patch_height_meters
+                        print(f"Normalized bbox: x_center={x_center}, y_center={y_center}, width={box_width}, height={box_height}")
+                        label_file.write(f"0 {x_center} {y_center} {box_width} {box_height}\n")
+                else:
+                    label_file.write("")
+if __name__ == "__main__":
+    base_dir = os.path.abspath(os.path.join(os.getcwd(), "..")) 
+    dataset_folder = os.path.join(base_dir, "1_DATASET-FOLDER")
+    output_dir = os.path.join(base_dir, "2.1_LABELLING")
+    print(f"Base directory: {base_dir}")
+    print(f"Dataset folder: {dataset_folder}")
+    geotiff_paths = find_files_by_extension(dataset_folder, ".tif")
+    shapefile_path = find_files_by_extension(dataset_folder, ".shp")[0]
+    print(f"GeoTIFF paths: {geotiff_paths}")
+    print(f"Shapefile path: {shapefile_path}")
+    if not geotiff_paths or not shapefile_path:
+        raise FileNotFoundError("GeoTIFF files or shapefile not found in the dataset folder.")
+    patch_size = 128
+    bbox_size_meters = 10
+    for geotiff_path in geotiff_paths:
+        generate_yolo_dataset(geotiff_path, shapefile_path, patch_size, bbox_size_meters, output_dir)
