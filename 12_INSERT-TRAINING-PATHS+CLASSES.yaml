@@ -12,3 +12,10 @@ nc: #This is the quantity of classes, not the class ID in labels (for YOLO the f
 
 # Class names
 names: ['...'] #Real name of the classes: Feature, Target, etc.
+
+
+
+
+
+
+#AlessiaBrucato_Ph.D.Project_Scripts
