@@ -11,3 +11,10 @@ C:\Users\...\runs\detect OR C:\Windows\System32\runs\detect
 
 -------------------------------------------------
 COPY TRAIN FOLDER IN 4.2_TRAINING-results AND COPY GEOTIFF TO PREDICT IN 5.1_PREDICT
+
+
+
+
+
+
+#AlessiaBrucato_Ph.D.Project_Scripts
