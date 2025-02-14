@@ -11,3 +11,10 @@ for root, _, files in os.walk(source_folder):
         elif file.lower().endswith('.txt'):
             shutil.copy2(source_file, labels_destination)
 print("Files copied successfully!")
+
+
+
+
+
+
+#AlessiaBrucato_Ph.D.Project_Scripts
