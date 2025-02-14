@@ -1,0 +1,13 @@
+import os
+import shutil
+source_folder = os.path.join('..', '2.1_LABELLING')
+images_destination = os.path.join('..', '3.1_AUGMENTATION-SPLITTING', 'images')
+labels_destination = os.path.join('..', '3.1_AUGMENTATION-SPLITTING', 'labels')
+for root, _, files in os.walk(source_folder):
+    for file in files:
+        source_file = os.path.join(root, file)
+        if file.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp', '.tiff')):
+            shutil.copy2(source_file, images_destination)
+        elif file.lower().endswith('.txt'):
+            shutil.copy2(source_file, labels_destination)
+print("Files copied successfully!")
