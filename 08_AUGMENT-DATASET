@@ -1,0 +1,78 @@
+import albumentations as A
+import cv2
+import os
+import glob
+base_folder = os.path.abspath(os.path.join(os.getcwd(), '..', '3.1_AUGMENTATION-SPLITTING'))
+image_folder = os.path.join(base_folder, 'images')
+label_folder = os.path.join(base_folder, 'labels')
+output_folder = os.path.join(base_folder, 'augmented_images')
+output_label_folder = os.path.join(base_folder, 'augmented_labels')
+os.makedirs(output_folder, exist_ok=True)
+os.makedirs(output_label_folder, exist_ok=True)
+transform = A.Compose(
+    [
+        A.HorizontalFlip(p=0.5),
+        A.RandomBrightnessContrast(p=0.5),
+        A.VerticalFlip(p=0.5),
+        A.Rotate(limit=30, p=0.5),
+    ],
+    bbox_params=A.BboxParams(format='yolo', label_fields=['category_ids'], min_visibility=0.3)
+)
+def read_yolo_labels(label_path):
+    if not os.path.exists(label_path):
+        return [], []
+    with open(label_path, 'r') as f:
+        lines = f.readlines()
+    bboxes = []
+    category_ids = []
+    for line in lines:
+        category_id, x_center, y_center, width, height = map(float, line.strip().split())
+        bboxes.append([x_center, y_center, width, height])
+        category_ids.append(int(category_id))
+    return bboxes, category_ids
+def write_yolo_labels(label_path, bboxes, category_ids):
+    with open(label_path, 'w') as f:
+        for bbox, category_id in zip(bboxes, category_ids):
+            x_center, y_center, width, height = bbox
+            f.write(f"{category_id} {x_center:.6f} {y_center:.6f} {width:.6f} {height:.6f}\n")
+def normalize_bboxes(bboxes):
+    normalized_bboxes = []
+    for bbox in bboxes:
+        x_center, y_center, width, height = bbox
+        x_min = x_center - width / 2
+        y_min = y_center - height / 2
+        x_max = x_center + width / 2
+        y_max = y_center + height / 2
+        x_min = max(0, min(1, x_min))
+        y_min = max(0, min(1, y_min))
+        x_max = max(0, min(1, x_max))
+        y_max = max(0, min(1, y_max))
+        width = x_max - x_min
+        height = y_max - y_min
+        x_center = (x_min + x_max) / 2
+        y_center = (y_min + y_max) / 2
+        if width > 0 and height > 0:
+            normalized_bboxes.append([x_center, y_center, width, height])
+    return normalized_bboxes
+image_files = glob.glob(os.path.join(image_folder, '*.jpg'))
+for image_path in image_files:
+    label_path = os.path.join(label_folder, os.path.splitext(os.path.basename(image_path))[0] + '.txt')
+    image = cv2.imread(image_path)
+    image_height, image_width = image.shape[:2]
+    bboxes, category_ids = read_yolo_labels(label_path)
+    bboxes = normalize_bboxes(bboxes)
+    base_name = os.path.splitext(os.path.basename(image_path))[0]
+    for i in range(20):
+        try:
+            transformed = transform(image=image, bboxes=bboxes, category_ids=category_ids)
+            transformed_image = transformed['image']
+            transformed_bboxes = normalize_bboxes(transformed['bboxes'])
+            transformed_category_ids = transformed['category_ids']
+            transformed_image_path = os.path.join(output_folder, f"{base_name}_{i}.jpg")
+            cv2.imwrite(transformed_image_path, transformed_image)
+            transformed_label_path = os.path.join(output_label_folder, f"{base_name}_{i}.txt")
+            write_yolo_labels(transformed_label_path, transformed_bboxes, transformed_category_ids)
+        except Exception as e:
+            print(f"Error during transformation for {base_name}_{i}: {e}")
+            continue
+print("Augmentation completed.")
