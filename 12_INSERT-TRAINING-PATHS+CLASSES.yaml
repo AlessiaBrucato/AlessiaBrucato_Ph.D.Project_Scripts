@@ -8,7 +8,7 @@ val: #...\PATH TO\...\validation_dataset
 test: #...\PATH TO\...\test_dataset
 
 # Number of classes
-nc: #This is the quantity of classes, not the class ID in labels (for YOLO the first class ID should be "0")
+nc: #Quantity of classes, not class IDs in labels (for YOLO the first class ID should be "0")
 
 # Class names
 names: ['...'] #Real name of the classes: Feature, Target, etc.
