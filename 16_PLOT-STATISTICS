@@ -1,0 +1,92 @@
+import os
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.stats import norm
+raw_data = """
+Analyzed field: FIELD
+Count: 
+Unique values: 
+NULL (missing) values: 
+Minimum value: 
+Maximum value: 
+Range: 
+Sum: 
+Mean value: 
+Median value: 
+Standard deviation: 
+Coefficient of Variation: 
+Minority (rarest occurring value): 
+Majority (most frequently occurring value): 
+First quartile: 
+Third quartile: 
+Interquartile Range (IQR): 
+"""
+data = {}
+for line in raw_data.strip().split("\n"):
+    key, value = line.split(":")
+    try:
+        data[key.strip()] = float(value.strip())
+    except ValueError:
+        data[key.strip()] = value.strip()
+mean_value = data["Mean value"]
+std_dev = data["Standard deviation"]
+min_value = data["Minimum value"]
+max_value = data["Maximum value"]
+first_quartile = data["First quartile"]
+third_quartile = data["Third quartile"]
+np.random.seed(42)
+arvi_values = np.random.normal(loc=mean_value, scale=std_dev, size=1533)
+bin_edges = np.linspace(min_value, max_value, 30) 
+bin_width = bin_edges[1] - bin_edges[0] 
+hist, bins = np.histogram(arvi_values, bins=bin_edges)  
+bin_centers = (bins[:-1] + bins[1:]) / 2 
+hist_normalized = (hist / hist.max()) * 100 
+x = np.linspace(min_value, max_value, 1000)
+pdf = norm.pdf(x, mean_value, std_dev)
+pdf_scaled = (pdf / pdf.max()) * 100 
+hist_peak = hist_normalized.max()
+pdf_peak = pdf_scaled.max()
+print(f"Histogram peak value: {hist_peak:.2f}% (should be 100%)")
+print(f"PDF peak value: {pdf_peak:.2f}% (should be 100%)")
+fig, ax1 = plt.subplots(figsize=(12, 6))
+ax1.bar(bin_centers, hist_normalized, width=bin_width, color="grey", alpha=0.5, label="Normalized Histogram")
+ax1.plot(x, pdf_scaled, color="red", label="Normalized PDF", linewidth=2)
+ax1.fill_between(
+    x, 0, pdf_scaled,
+    where=(x >= mean_value - std_dev) & (x <= mean_value + std_dev),
+    color="green", alpha=0.3, label="Mean ± 1 SD"
+)
+ax1.fill_between(
+    x, 0, pdf_scaled,
+    where=(x >= first_quartile) & (x <= third_quartile),
+    color="orange", alpha=0.3, label="Interquartile Range (Q1-Q3)"
+)
+ax1.axvline(min_value, color="purple", linestyle="--", label=f"Min ({min_value:.4f})")
+ax1.axvline(max_value, color="brown", linestyle="--", label=f"Max ({max_value:.4f})")
+ax1.axvline(mean_value, color="green", linestyle="--", label=f"Mean ({mean_value:.4f})")
+ax1.axvline(first_quartile, color="orange", linestyle="--", label=f"Q1 ({first_quartile:.4f})")
+ax1.axvline(third_quartile, color="orange", linestyle="--", label=f"Q3 ({third_quartile:.4f})")
+ax1.axvline(data["Median value"], color="cyan", linestyle="--", label=f"Median ({data['Median value']:.4f})")
+ax1.axvline(data["Majority (most frequently occurring value)"], color="blue", linestyle="--",
+             label=f"Majority ({data['Majority (most frequently occurring value)']:.4f})")
+ax1.set_title("Normalized Histogram and Probability Density Function of FIELD Values", fontsize=12)
+ax1.set_xlabel("FIELD Values", fontsize=10)
+ax1.set_ylabel("Normalized Probability %", fontsize=10)
+ax1.set_ylim(0, 110) 
+ax1.set_yticks(np.arange(0, 110, 10))
+ax1.grid(axis="y", linestyle="--", alpha=0.7)
+ax1.set_xlim(-1100000, 10000)
+from matplotlib.ticker import ScalarFormatter
+ax1.xaxis.set_major_formatter(ScalarFormatter())
+ax1.ticklabel_format(style='plain', axis='x')
+ax2 = ax1.twinx()
+ax2.set_ylabel("Real Probability", fontsize=10)
+ax2.set_ylim(0, pdf.max() * 1.1) 
+lines1, labels1 = ax1.get_legend_handles_labels()
+ax1.legend(lines1, labels1, fontsize=8, loc="upper left", facecolor="white", edgecolor="grey", framealpha=1.0)
+output_folder = os.path.join("..", "GRAPHS")
+output_filename = "FIELD.jpg"
+os.makedirs(output_folder, exist_ok=True)
+plt.tight_layout()
+plt.savefig(f"{output_folder}/{output_filename}", format="jpg", dpi=300)
+plt.show()
