@@ -1,0 +1,88 @@
+import geopandas as gpd
+from shapely.geometry import box
+import os
+from ultralytics import YOLO
+from PIL import Image, ImageDraw
+from tqdm import tqdm
+import rasterio
+def parse_world_file(world_file_path):
+    """Parse the .wld world file to extract affine transformation parameters."""
+    with open(world_file_path, 'r') as file:
+        values = [float(line.strip()) for line in file.readlines()]
+    return values
+def tile_image(image_path, tile_size=1024, overlap=128, frame_percentage=0.00):
+    """Splits an image into smaller overlapping tiles, excluding a frame border."""
+    with Image.open(image_path) as img:
+        width, height = img.size
+        frame_x = int(width * frame_percentage)
+        frame_y = int(height * frame_percentage)
+        tiles = []
+        for x in range(frame_x, width - frame_x, tile_size - overlap):
+            for y in range(frame_y, height - frame_y, tile_size - overlap):
+                box = (x, y, min(x + tile_size, width - frame_x), min(y + tile_size, height - frame_y))
+                tile = img.crop(box)
+                tiles.append((tile, box))
+        return tiles
+def pixel_to_geo(x, y, transform):
+    """Convert pixel coordinates to geographic coordinates."""
+    x_geo = transform[2] + x * transform[0] + y * transform[1]
+    y_geo = transform[5] + x * transform[3] + y * transform[4]
+    return x_geo, y_geo
+def export_yolo_predictions_as_geojson(image_path, model_path, output_dir, tile_size=1024, overlap=128, frame_percentage=0.00):
+    model = YOLO(model_path)
+    Image.MAX_IMAGE_PIXELS = None 
+    crs = None
+    transform = None
+    try:
+        with rasterio.open(image_path) as src:
+            crs = src.crs.to_string()
+            transform = src.transform
+            image_data = src.read([1, 2, 3])
+            image_data = image_data.transpose(1, 2, 0)
+        print(f"Error reading GeoTIFF: {e}")
+        return
+    temp_image_path = os.path.splitext(image_path)[0] + "_temp.jpg"
+    Image.fromarray(image_data, mode="RGB").save(temp_image_path)
+    tiles = tile_image(temp_image_path, tile_size, overlap, frame_percentage)
+    data = []
+    txt_results = []
+    with Image.open(temp_image_path) as img:
+        draw = ImageDraw.Draw(img)
+        for tile, (x_offset, y_offset, _, _) in tqdm(tiles, desc="Processing tiles", unit="tile"):
+            results = model(tile, imgsz=1024)
+            for result in results:
+                for box_coords, score, cls in zip(result.boxes.xyxy, result.boxes.conf, result.boxes.cls):
+                    x1, y1, x2, y2 = [float(coord) for coord in box_coords]
+                    x1 += x_offset
+                    x2 += x_offset
+                    y1 += y_offset
+                    y2 += y_offset
+                    x1_geo, y1_geo = pixel_to_geo(x1, y1, transform)
+                    x2_geo, y2_geo = pixel_to_geo(x2, y2, transform)
+                    geom = box(x1_geo, y1_geo, x2_geo, y2_geo)
+                    data.append({'geometry': geom, 'class': int(cls), 'confidence': float(score)})
+                    txt_results.append(f"{int(cls)} {score:.6f} {x1_geo} {y1_geo} {x2_geo} {y2_geo}")
+                    draw.rectangle([x1, y1, x2, y2], outline="red", width=2)
+                    draw.text((x1, max(0, y1 - 10)), f"{int(cls)}: {score:.2f}", fill="red")
+        annotated_image_path = os.path.join(output_dir, f"{os.path.basename(image_path)}_annotated.jpg")
+        img.save(annotated_image_path)
+        print(f"Annotated image saved to: {annotated_image_path}")
+    gdf = gpd.GeoDataFrame(data, columns=['geometry', 'class', 'confidence'])
+    gdf.crs = crs
+    os.makedirs(output_dir, exist_ok=True)
+    geojson_path = os.path.join(output_dir, f"{os.path.basename(image_path)}_predictions.geojson")
+    gdf.to_file(geojson_path, driver='GeoJSON')
+    print(f"Predictions saved to: {geojson_path}")
+    txt_path = os.path.join(output_dir, f"{os.path.basename(image_path)}_predictions.txt")
+    with open(txt_path, 'w') as txt_file:
+        txt_file.write("\n".join(txt_results))
+    print(f"Predictions saved to: {txt_path}")
+if __name__ == "__main__":
+    image_dir = os.path.join("..", "5.1_PREDICT")
+    model_path = os.path.join("..", "4.2_TRAINING-results", "train", "weights", "best.pt")
+    output_dir = os.path.join("..", "5.2_PREDICT-results")
+    for file in os.listdir(image_dir):
+        if file.lower().endswith('.tif'):
+            image_path = os.path.join(image_dir, file)
+            print(f"Processing image: {image_path}")
+            export_yolo_predictions_as_geojson(image_path, model_path, output_dir)
