@@ -41,3 +41,11 @@ if __name__ == "__main__":
     label_dir = os.path.join(script_dir, "3.1_AUGMENTATION-SPLITTING", "FINAL_labels")
     output_dir = os.path.join(script_dir, "3.2_AUGMENTATION-SPLITTING-check")
     visualize_bounding_boxes(patch_dir, label_dir, output_dir)
+
+
+
+
+
+
+
+#AlessiaBrucato_Ph.D.Project_Scripts
