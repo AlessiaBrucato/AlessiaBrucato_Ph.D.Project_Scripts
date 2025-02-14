@@ -14,8 +14,8 @@ Instructions:
 
 4 - Follow the instructions and execute files 12-14 in Env.3.
 
-5 - Follow the instructions and execute file 15 in Env.4.
+5 - Follow the instructions and execute file 15 in Google Earth Engine Code Editor.
 
-6 - Follow the instructions and execute file 16 in Env.5.
+6 - Follow the instructions and execute file 16 in Env.4.
 
-7 - Follow the instructions and execute file 17 in Google Earth Engine - Code Editor.
+7 - Follow the instructions and execute file 17 in Env.5.
