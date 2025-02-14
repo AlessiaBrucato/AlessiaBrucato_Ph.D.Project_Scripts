@@ -20,6 +20,3 @@ Instructions:
 
 7 - Follow the instructions and execute file 18 in Env.5.
 
-
-
-#AlessiaBrucato_Ph.D.Project_Scripts
