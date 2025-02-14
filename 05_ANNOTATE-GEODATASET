@@ -93,3 +93,8 @@ if __name__ == "__main__":
     bbox_size_meters = 10
     for geotiff_path in geotiff_paths:
         generate_yolo_dataset(geotiff_path, shapefile_path, patch_size, bbox_size_meters, output_dir)
+
+
+
+
+#AlessiaBrucato_Ph.D.Project_Scripts
