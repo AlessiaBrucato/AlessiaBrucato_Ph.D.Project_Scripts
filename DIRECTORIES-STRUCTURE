@@ -1,0 +1,30 @@
+import os
+import time
+main_dir = os.path.abspath(os.path.join(os.getcwd(), ".."))
+folders = [
+    "1_DATASET-FOLDER",
+    "2.1_LABELLING",
+    "2.2_LABELLING-check",
+    "3.1_AUGMENTATION-SPLITTING/images",
+    "3.1_AUGMENTATION-SPLITTING/labels",
+    "3.2_AUGMENTATION-SPLITTING-check",
+    "4.1_TRAINING",
+    "4.2_TRAINING-results",
+    "1.0_PREPARE-DATASET-PREDICT/SPLIT",
+    "5.1_PREDICT",
+    "5.2_PREDICT-results"
+]
+start_time = time.time()
+try:
+    if not os.path.exists(main_dir):
+        raise FileNotFoundError(f"Main directory does not exist: {main_dir}")
+    
+    print(f"Using existing main directory: {main_dir}")
+    for folder in folders:
+        folder_start = time.time()
+        path = os.path.join(main_dir, folder)
+        os.makedirs(path, exist_ok=True)
+        print(f"Created or verified: {path} in {time.time() - folder_start:.2f} seconds")
+except Exception as e:
+    print(f"An error occurred: {e}")
+print(f"Total time taken: {time.time() - start_time:.2f} seconds")
