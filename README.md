@@ -4,7 +4,7 @@
 Instructions:
 ------------------------------------------------------------
 
-0 - Install the software Anaconda and NVIDIA CUDA Toolkit.
+0 - Install Anaconda and NVIDIA CUDA Toolkit.
 
 1 - Create anaconda environments as explained in file 01.
 
