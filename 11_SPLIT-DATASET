@@ -55,3 +55,10 @@ if __name__ == "__main__":
     val_percent = 0.1
     test_percent = 0.1
     split_dataset_with_labels(source_folder, label_folder, output_folder, train_percent, test_percent, val_percent)
+
+
+
+
+
+
+#AlessiaBrucato_Ph.D.Project_Scripts
