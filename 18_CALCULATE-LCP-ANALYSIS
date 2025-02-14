@@ -1,0 +1,106 @@
+import geopandas as gpd
+import rasterio
+import numpy as np
+from shapely.geometry import LineString, box
+from scipy.spatial.distance import cdist
+from skimage.graph import route_through_array
+from scipy.ndimage import label
+import os
+from tqdm import tqdm
+import psutil
+def monitor_system():
+    """Monitor and report CPU and memory usage."""
+    cpu_usage = psutil.cpu_percent()
+    memory_info = psutil.virtual_memory()
+    return f"CPU Usage: {cpu_usage}%, Memory Usage: {memory_info.percent}%"
+def calculate_lcp(input_folder, output_shapefile):
+    """
+    Perform Least Cost Path analysis with monitoring and save results into a single shapefile.
+    Args:
+        input_folder (str): Path to the folder containing shapefiles and cost rasters.
+        output_shapefile (str): Path to the output shapefile where all LCPs will be saved.
+    Requirements:
+        - Shapefiles must contain valid point geometries.
+        - The folder must contain valid cost rasters (GeoTIFFs).
+    """
+    os.makedirs(os.path.dirname(output_shapefile), exist_ok=True)
+    shapefiles = [f for f in os.listdir(input_folder) if f.endswith(".shp")]
+    rasters = [f for f in os.listdir(input_folder) if f.endswith(".tif")]
+    if not shapefiles or not rasters:
+        raise FileNotFoundError("No shapefiles or TIFF files found in the input folder.")
+    all_lcp_features = []
+    for shapefile in shapefiles:
+        points_fp = os.path.join(input_folder, shapefile)
+        for raster in rasters:
+            raster_fp = os.path.join(input_folder, raster)
+            points_gdf = gpd.read_file(points_fp)
+            if points_gdf.empty or points_gdf.geometry.is_empty.any():
+                print(f"Skipping {shapefile}: it has no valid geometries.")
+                continue
+            with rasterio.open(raster_fp) as src:
+                cost_raster = src.read(1)
+                transform = src.transform
+                crs = src.crs
+                bounds = rasterio.transform.array_bounds(cost_raster.shape[0], cost_raster.shape[1], transform)
+                minx, miny, maxx, maxy = bounds
+                raster_bbox = box(minx, miny, maxx, maxy)
+                if points_gdf.crs != crs:
+                    points_gdf = points_gdf.to_crs(crs)
+                points_gdf = points_gdf[points_gdf.geometry.within(raster_bbox)]
+                if len(points_gdf) < 2:
+                    print(f"Not enough points within raster extent for {shapefile} and {raster}. Skipping...")
+                    continue
+                coords = np.array([(point.x, point.y) for point in points_gdf.geometry])
+                dist_matrix = cdist(coords, coords)
+                visited, current = [0], 0
+                while len(visited) < len(points_gdf):
+                    unvisited = [i for i in range(len(points_gdf)) if i not in visited]
+                    next_point = unvisited[np.argmin([dist_matrix[current][i] for i in unvisited])]
+                    visited.append(next_point)
+                    current = next_point
+                points_gdf = points_gdf.iloc[visited].reset_index(drop=True)
+                for i in tqdm(range(len(points_gdf) - 1), desc=f"Processing {shapefile} with {raster}"):
+                    from_point = points_gdf.iloc[i].geometry
+                    to_point = points_gdf.iloc[i + 1].geometry
+                    def point_to_index(point, transform):
+                        x, y = point.x, point.y
+                        col, row = ~transform * (x, y)
+                        return int(row), int(col)
+                    start_idx = point_to_index(from_point, transform)
+                    end_idx = point_to_index(to_point, transform)
+                    if not (
+                        0 <= start_idx[0] < cost_raster.shape[0]
+                        and 0 <= start_idx[1] < cost_raster.shape[1]
+                        and 0 <= end_idx[0] < cost_raster.shape[0]
+                        and 0 <= end_idx[1] < cost_raster.shape[1]
+                    ):
+                        print(f"Skipping path: Start or end point is outside raster bounds for {shapefile} and {raster}.")
+                        continue
+                    try:
+                        path, cost = route_through_array(cost_raster, start_idx, end_idx, fully_connected=True)
+                    except ValueError as e:
+                        print(f"Skipping path: {e} for {shapefile} and {raster}.")
+                        continue
+                    path_coords = [rasterio.transform.xy(transform, row, col) for row, col in path]
+                    if len(path_coords) > 1:
+                        line = LineString(path_coords)
+                        all_lcp_features.append({
+                            "shapefile": shapefile,
+                            "raster": raster,
+                            "cost": cost,
+                            "geometry": line
+                        })
+                    else:
+                        print(f"Skipping path: Not enough points to create a LineString for {shapefile} and {raster}.")
+                    print(monitor_system())
+    if all_lcp_features:
+        lcp_gdf = gpd.GeoDataFrame(all_lcp_features, crs=crs)
+        lcp_gdf.to_file(output_shapefile)
+        print(f"All LCPs saved to {output_shapefile}")
+    else:
+        print("No valid LCPs were generated.")
+source_folder = os.path.join('..', '2.1_LABELLING')
+images_destination = os.path.join('..', '3.1_AUGMENTATION-SPLITTING', 'images')
+input_folder = os.path.join('..', 'INPUT')
+output_shapefile = #r'...PATH TO OUTPUT FOLDER...\...OUTPUT LCP NAME.shp'
+calculate_lcp(input_folder, output_shapefile)
