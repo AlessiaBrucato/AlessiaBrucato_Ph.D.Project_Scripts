@@ -1,12 +1,10 @@
 GENERAL ENVIRONMENT CREATION SCRIPT:
 
-conda create --name ENVIRONMENT-NAME python=3.9.21
+conda create --name ENVIRONMENT NAME python=3.9.21
 
 --------------------------------------------------
 ENV-1: DATASET PREPARATION - LABELLING
 --------------------------------------------------
-
-ENVIRONMENT NAME, python=3.9.21
 
 INSTALLATION SCRIPT:
 
@@ -22,8 +20,6 @@ conda list
 ENV-2: DATASET PREPARATION – AUGMENTATION AND SPLITTING
 --------------------------------------------------
 
-ENVIRONMENT NAME, python=3.9.21
-
 INSTALLATION SCRIPT:
 
 conda activate ENVIRONMENT NAME
@@ -37,8 +33,6 @@ conda list
 --------------------------------------------------
 ENV-3: DEEPLEARNING – TRAINING AND PREDICT
 --------------------------------------------------
-
-ENVIRONMENT NAME, python=3.9.21
 
 INSTALLATION SCRIPT 1 OF 2:
 
