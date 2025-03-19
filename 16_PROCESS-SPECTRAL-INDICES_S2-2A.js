@@ -4,7 +4,7 @@
 // Select the satellite repositories for this job. In this case the Sentinel2-2A and the linked
 // Cloud Cover Probability dataset
 
-var s2Sr = ee.ImageCollection("COPERNICUS/S2_SR"),
+var s2Sr = ee.ImageCollection("COPERNICUS/S2_SR_HARMONIZED"),
     s2Clouds = ee.ImageCollection("COPERNICUS/S2_CLOUD_PROBABILITY");
 
 // Create a polygon of the area of interest and copy/paste the couple of coordinates of each vertex
